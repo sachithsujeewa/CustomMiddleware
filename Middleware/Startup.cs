@@ -21,6 +21,12 @@ namespace Empty
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        /// <summary>
+        /// Configures the specified application.
+        /// </summary>
+        /// <param name="app">The application.</param>
+        /// <param name="env">The env.</param>
+        /// <param name="loggerFactory">The logger factory.</param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
         {
             var logger = loggerFactory.CreateLogger("Empty");
@@ -32,13 +38,15 @@ namespace Empty
             
             app.UseStaticFiles();
 
+            // intercept each request
+            //app.Use(async (context, next) => {
+            //    var timer = Stopwatch.StartNew();
+            //    logger.LogInformation("===> I'm inside beggining app.use method");
+            //    await next();
+            //    logger.LogInformation($"===> I'm inside the end of app.use method {timer.ElapsedMilliseconds} ms");
+            //});
 
-            app.Use(async (context, next) => {
-                var timer = Stopwatch.StartNew();
-                logger.LogInformation("===> I'm inside beggining app.use method");
-                await next();
-                logger.LogInformation($"===> I'm inside the end of app.use method {timer.ElapsedMilliseconds} ms");
-            });
+            app.UseEnvironmentMiddleware();
 
             app.Map("/Contacts", a => a.Run(async (context) =>
             {
@@ -47,7 +55,8 @@ namespace Empty
                 await context.Response.WriteAsync("this is your content page");
             }));
 
-            app.MapWhen((context) => context.Request.Headers["User-Agent"].First().Contains("OPR"), FireFoxRoute);
+            // Identify the browser
+            app.MapWhen((context) => context.Request.Headers["User-Agent"].First().Contains("OPR"), OperaRoute);
 
             app.UseRouting();
             app.UseEndpoints(endpoints =>
@@ -67,7 +76,7 @@ namespace Empty
             });
         }
 
-        private void FireFoxRoute(IApplicationBuilder app)
+        private void OperaRoute(IApplicationBuilder app)
         {
             app.Run(async (context) =>
             {
